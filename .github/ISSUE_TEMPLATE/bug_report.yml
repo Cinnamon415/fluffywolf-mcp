@@ -1,0 +1,37 @@
+name: Bug report
+description: Something does not work as the README says
+labels: [bug]
+body:
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: For example LibreWolf 156 (Flatpak), Firefox ESR 140, Zen 1.x
+    validations: { required: true }
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+    validations: { required: true }
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      description: Claude Code, Claude Desktop, Cursor, ...
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include how many profiles, windows and agents were involved.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The extension's console (about:debugging → This Firefox → Inspect) and the MCP server's stderr, if relevant.
+      render: text

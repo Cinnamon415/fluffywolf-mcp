@@ -1,0 +1,29 @@
+{
+  "name": "fluffywolf-mcp",
+  "version": "1.3.0",
+  "description": "MCP server and WebExtension that let AI agents use your real Firefox-based browser, only in the windows and tabs you allow.",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "firefox",
+    "webextension",
+    "browser-automation",
+    "ai-agents",
+    "librewolf",
+    "zen-browser",
+    "floorp",
+    "waterfox"
+  ],
+  "scripts": {
+    "setup": "npm --prefix server install && node build.mjs",
+    "build": "node build.mjs",
+    "test": "node test/agents.test.mjs && node test/server.test.mjs",
+    "lint": "npx --yes web-ext@10 lint --source-dir extension",
+    "install-page": "node install/serve.mjs"
+  }
+}

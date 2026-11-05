@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FluffyWolf MCP</title>
+<style>
+  :root { --bg:#f6f5f2; --fg:#1d1d1b; --muted:#6b6a66; --card:#fff; --line:#e3e1db; --accent:#2b59c3; --ok:#1f7a45; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161615; --fg:#ecebe7; --muted:#9a988f; --card:#1f1f1d; --line:#32312e; --accent:#7ea2f4; --ok:#5fcf8b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:56px 16px; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  p.lead { color:var(--muted); margin:0 0 28px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; }
+  a.install { display:block; text-align:center; background:var(--accent); color:#fff; text-decoration:none;
+    font-weight:600; padding:16px; border-radius:10px; font-size:18px; }
+  @media (prefers-color-scheme: dark) { a.install { color:#0d1530; } }
+  a.install:hover { filter:brightness(1.08); }
+  #state { margin:16px 0 0; text-align:center; color:var(--muted); font-size:14px; }
+  #state.ok { color:var(--ok); font-weight:600; }
+  ol { margin:24px 0 0; padding-left:20px; color:var(--muted); font-size:14px; }
+  ol b { color:var(--fg); font-weight:600; }
+  li + li { margin-top:6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FluffyWolf MCP</h1>
+  <p class="lead">Расширение, которое подключает браузер на базе Firefox к локальному MCP-серверу.</p>
+  <div class="card">
+    <a class="install" href="fluffywolf-mcp.xpi">Установить расширение</a>
+    <div id="state">Ожидание установки…</div>
+    <ol>
+      <li>Нажмите кнопку выше.</li>
+      <li>Если браузер покажет панель «предотвратил запрос на установку», нажмите <b>Разрешить</b>.</li>
+      <li>В окне подтверждения нажмите <b>Добавить</b>.</li>
+    </ol>
+  </div>
+</main>
+<script>
+  // The extension's content script marks this page once it is active.
+  const state = document.getElementById("state");
+  const timer = setInterval(() => {
+    if (document.documentElement.hasAttribute("data-fluffywolf-mcp")) {
+      state.textContent = "Расширение установлено ✓ Эту вкладку можно закрыть.";
+      state.className = "ok";
+      clearInterval(timer);
+    }
+  }, 700);
+</script>
+</body>
+</html>
