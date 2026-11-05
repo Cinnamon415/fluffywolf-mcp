@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 20
       - name: Build the extension with the public default token
-        run: FLUFFYWOLF_MCP_TOKEN="$(cat default.token)" node build.mjs
+        run: node build.mjs --release
       - name: Checksum
         run: cd dist && sha256sum fluffywolf-mcp.xpi > fluffywolf-mcp.xpi.sha256
       - name: Publish the release

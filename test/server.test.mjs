@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,13 +14,15 @@ const { StdioClientTransport } = await import(require.resolve("@modelcontextprot
 const WebSocket = require("ws");
 
 const BASE = 18767;
-const token = randomBytes(32).toString("hex"); // handed to the servers through the environment
+// the servers under test look for .token, then default.token: so do the fake profiles
+const fileToken = (f) => { try { return readFileSync(join(root, f), "utf8").trim(); } catch { return ""; } };
+const token = [fileToken(".token"), fileToken("default.token")].find((t) => t.length >= 32);
 
 async function startAgent() {
   const client = new Client({ name: "t", version: "0" });
   await client.connect(new StdioClientTransport({
     command: "node", args: [join(root, "server", "index.mjs")],
-    env: { ...process.env, FLUFFYWOLF_MCP_PORT: String(BASE), FLUFFYWOLF_MCP_TOKEN: token }, stderr: "ignore",
+    env: { ...process.env, FLUFFYWOLF_MCP_PORT: String(BASE) }, stderr: "ignore",
   }));
   return client;
 }

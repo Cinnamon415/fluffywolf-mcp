@@ -19,19 +19,15 @@ const PORT_SPAN = 10; // keep in sync with `span` in build.mjs
 const AGENT_ID = randomBytes(16).toString("hex");
 const log = (...a) => console.error("[fluffywolf-mcp]", ...a);
 
-// The shared secret the extension presents. First found wins: FLUFFYWOLF_MCP_TOKEN, the `.token` file that
-// build.mjs writes for your own build, then the public `default.token` that the released extension is built with.
+// The shared secret the extension presents: the `.token` that build.mjs generated for your own build, otherwise the
+// public `default.token` that the released extension is built with.
 function loadToken() {
-  const fromEnv = (process.env.FLUFFYWOLF_MCP_TOKEN || "").trim();
-  const candidates = [["FLUFFYWOLF_MCP_TOKEN", () => fromEnv], [".token", () => readFileSync(join(root, ".token"), "utf8")], ["default.token", () => readFileSync(join(root, "default.token"), "utf8")]];
-  for (const [source, read] of candidates) {
+  for (const file of [".token", "default.token"]) {
     let t = "";
-    try { t = read().trim(); } catch {}
-    if (!t) continue;
-    if (t.length < 32) throw new Error(`The token from ${source} is too short (32 characters at least).`);
-    return { token: t, source };
+    try { t = readFileSync(join(root, file), "utf8").trim(); } catch {}
+    if (t.length >= 32) return { token: t, source: file };
   }
-  throw new Error("No token found: expected FLUFFYWOLF_MCP_TOKEN, .token or default.token next to the server.");
+  throw new Error("No token found: expected .token or default.token next to the server.");
 }
 const { token: TOKEN, source: TOKEN_SOURCE } = loadToken();
 
