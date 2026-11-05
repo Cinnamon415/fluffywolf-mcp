@@ -3,7 +3,7 @@
 // Every MCP server process is one "agent" with its own WebSocket. An agent can do nothing until the user picks it
 // in the popup of a window (a "binding", time-limited). Inside a bound window it sees only the tabs the user
 // allowed for it, unless the user gave it full access. All of this is enforced here, never in the MCP server.
-/* global browser, FWMCP_CONFIG, commands, siteOf, sameSite, cleanText, Notices, rightsText, shortDir,
+/* global browser, fetch, AbortController, FWMCP_CONFIG, commands, siteOf, sameSite, cleanText, Notices, rightsText, shortDir,
    refreshPageActions, tabMeta */
 
 const DEFAULT_MINUTES = 15;
@@ -324,9 +324,29 @@ function connectPort(port) {
   ws.onerror = () => { try { ws.close(); } catch {} };
 }
 
+// A WebSocket that fails to connect is remembered by the browser per address, and the next attempt to it is delayed,
+// by up to a minute (RFC 6455 7.2.3). Trying every port every few seconds would make a server that starts later wait
+// that long, so each port is probed with a plain HTTP request first, which carries no such penalty.
+const probing = new Set();
+async function probe(port) {
+  if (sockets.has(port) || probing.has(port)) return;
+  probing.add(port);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 1500);
+  try {
+    await fetch(`http://127.0.0.1:${port}/`, { mode: "no-cors", cache: "no-store", signal: ctl.signal });
+    connectPort(port);
+  } catch {
+    // nothing listens on this port (yet)
+  } finally {
+    clearTimeout(timer);
+    probing.delete(port);
+  }
+}
+
 function scanPorts() {
   if (!profile) return;
-  for (let p = FWMCP_CONFIG.port; p < FWMCP_CONFIG.port + PORT_SPAN; p++) connectPort(p);
+  for (let p = FWMCP_CONFIG.port; p < FWMCP_CONFIG.port + PORT_SPAN; p++) probe(p);
 }
 
 // ---------- user actions (from the popup, and the address-bar button in events.js) ----------

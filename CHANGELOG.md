@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Fix: a server that started after the browser could stay unconnected for up to a minute, and agents then reported "no browser profile is connected". Firefox delays WebSocket reconnects after failed attempts, and the extension tried every port every four seconds. It now probes each port with a plain HTTP request first and opens a WebSocket only where a server answers.
+- A server that has just started waits up to eight seconds for the browser before it reports that no profile is connected, and the message says to retry shortly.
+
 ## 1.3.0
 
 First public version.

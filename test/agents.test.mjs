@@ -18,6 +18,8 @@ const listeners = () => {
 };
 
 const sockets = new Map(); // port -> FakeWS
+const listening = new Set(); // ports with a server behind them: the extension probes with fetch before it opens a socket
+for (let p = 8767; p < 8777; p++) listening.add(p);
 class FakeWS {
   static OPEN = 1;
   constructor(url) { this.port = Number(new URL(url).port); this.readyState = 1; this.sent = []; sockets.set(this.port, this); }
@@ -72,7 +74,8 @@ const session = new Map();
 const store = {};
 const ctx = vm.createContext({
   FWMCP_CONFIG: { port: 8767, span: 10, token: "t" },
-  WebSocket: FakeWS, crypto: globalThis.crypto, console, URL,
+  WebSocket: FakeWS, crypto: globalThis.crypto, console, URL, AbortController,
+  fetch: async (url) => { if (!listening.has(Number(new URL(url).port))) throw new TypeError("connection refused"); return {}; },
   Date: { now: () => now },
   setTimeout: () => 0, clearTimeout: () => {},
   setInterval: (fn, ms) => { intervals.push({ fn, ms }); return intervals.length; },
@@ -129,7 +132,9 @@ const noticeText = (r) => (r.notices || []).join("\n");
 
 // ---------- scenario ----------
 
-assert.equal(sockets.size, 10, "extension scans the whole port range");
+await settle();
+await settle();
+assert.equal(sockets.size, 10, "extension connects to every port that has a server");
 const wa = connect(8767, A);
 const wb = connect(8768, B);
 
@@ -319,6 +324,8 @@ assert.ok((await popup({ type: "view" })).candidates.every((c) => c.connId !== A
 
 // A reconnects as a new process, claims its old record, user picks it: tabs and rights are back
 intervals.filter((i) => i.ms === 4000).forEach((i) => i.fn()); // the periodic port scan reopens the freed port
+await settle();
+await settle();
 const wa2 = connect(8767, "c".repeat(32));
 ok(await cmd(wa2, "request_access", { name: "Alpha again", resume: ["f".repeat(32), resumeId], cwd: "/home/u/projects/alpha", pid: 13 }));
 v = await popup({ type: "view" });
@@ -361,9 +368,23 @@ wa2.close();
 now += 8 * 24 * 3600 * 1000;
 intervals.filter((i) => i.ms === 3600 * 1000).forEach((i) => i.fn());
 intervals.filter((i) => i.ms === 4000).forEach((i) => i.fn());
+await settle();
+await settle();
 const wa3 = connect(8767, "d".repeat(32));
 ok(await cmd(wa3, "request_access", { name: "Late", resume: [resumeId], cwd: "/x", pid: 14 }));
 assert.equal((await popup({ type: "view" })).candidates.find((c) => c.name === "Late").resume, null);
+
+// ports without a server are only probed over HTTP: no WebSocket is opened (and so no failed attempt is remembered
+// by the browser, which would delay the next real connection)
+const scan = async () => { intervals.filter((i) => i.ms === 4000).forEach((i) => i.fn()); await settle(); await settle(); };
+sockets.get(8776)?.close();
+sockets.delete(8776);
+listening.delete(8776);
+await scan();
+assert.equal(sockets.has(8776), false, "no socket for a port nobody listens on");
+listening.add(8776);
+await scan();
+assert.equal(sockets.has(8776), true, "a server that appears later is found by the next scan");
 
 // renaming the profile is announced to every connected server and survives in storage
 const open = [...sockets.values()].filter((w) => w.readyState === 1);

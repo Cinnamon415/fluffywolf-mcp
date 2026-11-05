@@ -41,9 +41,11 @@ let port = null;            // the port this process listens on
 let nextId = 1;
 const pending = new Map();  // call id -> { resolve, reject, timer, profileId }
 const stateWaiters = new Set();
+const profileWaiters = new Set(); // resolved when a profile connects
+const STARTED = Date.now();
 let noticeBuf = [];         // notices from the extensions, appended to the next tool result
 
-const NOT_CONNECTED = "No browser profile is connected (the browser is not running, the 'FluffyWolf MCP' extension is disabled, or all bridge ports are busy). Ask the user to check it, then retry.";
+const NOT_CONNECTED = "No browser profile is connected (the browser is not running, the 'FluffyWolf MCP' extension is disabled, or all bridge ports are busy). If this server has only just started, wait a few seconds and retry: the browser finds a new server within about four seconds. Otherwise ask the user to check it.";
 const clean = (s, max) => String(s ?? "").replace(/[^\P{C}]/gu, " ").replace(/\s+/g, " ").trim().slice(0, max);
 
 function tokenOk(given) {
@@ -93,6 +95,8 @@ function startBridge(p = BASE_PORT) {
           const old = profiles.get(msg.profileId);
           profile = { id: msg.profileId, label: clean(msg.profile, 40) || `profile-${msg.profileId.slice(-4)}`, ws, status: null };
           profiles.set(profile.id, profile); // a reconnecting profile replaces its own old socket
+          for (const w of profileWaiters) w();
+          profileWaiters.clear();
           if (old && old.ws !== ws) old.ws.close();
           ws.send(JSON.stringify({ type: "agent", agentId: AGENT_ID }));
           log(`profile "${profile.label}" connected (extension v${msg.version})`);
@@ -163,6 +167,17 @@ function pick(ref) {
 
 const rcall = ({ profile, ...args }, cmd, timeoutMs) => call(pick(profile), cmd, args, timeoutMs);
 
+// A server that has just started is usually found by the browser within a few seconds. Until then the first calls wait
+// a little instead of reporting that no browser is connected, which agents take as "the browser is not running".
+async function waitForFirstProfile() {
+  if (profiles.size || Date.now() - STARTED > 30000) return;
+  await new Promise((resolve) => {
+    const done = () => { clearTimeout(t); profileWaiters.delete(done); resolve(); };
+    const t = setTimeout(done, 8000);
+    profileWaiters.add(done);
+  });
+}
+
 // Resolves when any profile reports "active", or after `ms`.
 function waitForActive(ms) {
   return new Promise((resolve) => {
@@ -174,15 +189,24 @@ function waitForActive(ms) {
 
 // ---------------- tools ----------------
 
-const INSTRUCTIONS = [
-  "Browser access is gated by the user and separate for every browser profile. First call list_profiles, then request_access",
-  "with a short name of your own, what you want to do and the profiles you need; the user then picks this session in the",
-  "FluffyWolf MCP popup of the window you should use. You only see the tabs the user allowed (unless they gave you full access).",
-  "If you have access in several profiles, pass `profile` to every tool. Replies may end with '[FluffyWolf notices]': changes of",
-  "your rights or of the page state made by the user. Read them before continuing.",
-].join(" ");
+// The same guide is delivered three ways, because clients differ: as the server instructions, in the first reply of
+// list_profiles, and in the description of the tools an agent meets first.
+const GUIDE = [
+  "How to use FluffyWolf MCP: it gives you the user's real browser, but only what the user allows.",
+  "1. list_profiles shows the running browser profiles. Start here.",
+  "2. request_access: give a short name, what you want to do and the profiles to ask (several is fine; if unsure, ask all of them).",
+  "The user picks you in the FluffyWolf popup of the window you should use. This can take up to a minute: if it says 'not granted yet',",
+  "call request_access again. One profile is enough, you do not have to wait for the others.",
+  "3. list_tabs lists only the tabs the user shared with the address-bar button. If it is empty, ask the user to click that button on the",
+  "tab you should use (or use open_tab if you have the 'open new tabs' right), then call list_tabs again.",
+  "4. Work with the tab: screenshot (image of the visible area), snapshot or get_text (read the page), click, type_text, press_key,",
+  "scroll, navigate, evaluate. Pass tabId from list_tabs, and `profile` if you have access in several profiles.",
+  "Replies may end with '[FluffyWolf notices]': things the user changed, or changes of your rights. Read them before continuing.",
+  "The user can pause or end your access at any time; the error then says how to ask again.",
+].join("\n");
+const INSTRUCTIONS = GUIDE;
 
-const server = new McpServer({ name: "fluffywolf", version: "1.3.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "fluffywolf", version: "1.3.1" }, { instructions: INSTRUCTIONS });
 
 const tabId = z.number().int().optional().describe("Tab id from list_tabs. Defaults to the tab you used last.");
 const ref = z.string().optional().describe("Element ref from snapshot, e.g. e12");
@@ -202,7 +226,7 @@ const profile = z.string().optional().describe("Profile name or id from list_pro
 // Every tool that acts on a browser takes `profile`; the ones that manage access say routed=false.
 const tool = (name, description, schema, fn, routed = true) =>
   server.registerTool(name, { description, inputSchema: routed ? { ...schema, profile } : schema }, async (args) => {
-    try { return withNotices(await fn(args)); } catch (e) { return withNotices(fail(e)); }
+    try { await waitForFirstProfile(); return withNotices(await fn(args)); } catch (e) { return withNotices(fail(e)); }
   });
 
 tool("list_tabs", "List the browser tabs you can use (id, window, title, url, active, own). Tabs the user has not allowed are not shown. With access in several profiles and no `profile`, tabs of all of them are listed, each marked with its profile.", {},
@@ -213,7 +237,9 @@ tool("list_tabs", "List the browser tabs you can use (id, window, title, url, ac
       for (const p of active) out.push(...(await call(p, "list_tabs")).map((t) => ({ profile: p.label, ...t })));
       return text(out);
     }
-    return text(await rcall(a, "list_tabs"));
+    const tabs = await rcall(a, "list_tabs");
+    if (Array.isArray(tabs) && !tabs.length) return text(`[]\nNo tab is shared with you yet. Ask the user to click the FluffyWolf MCP button in the address bar of the tab you should use (or use open_tab if you have the 'open new tabs' right), then call list_tabs again.`);
+    return text(tabs);
   });
 
 tool("open_tab", "Open a URL in a new tab of a shared window and wait for it to load. Needs the 'open new tabs' right. The tab stays yours: you may close it later.", { url: z.string(), active: z.boolean().optional().describe("Focus the new tab (default true)"), windowId: z.number().int().optional().describe("Shared window to use; default is the window of your current tab") },
@@ -270,10 +296,13 @@ tool("screenshot", "PNG screenshot of the visible area of a tab (works for backg
     return { content: [{ type: "image", data: dataUrl.replace(/^data:image\/png;base64,/, ""), mimeType: "image/png" }] };
   });
 
-tool("list_profiles", "List the browser profiles that are running with the extension. Profiles are isolated from each other and from you until you ask one of them for access. Call this first, then request_access with the profiles you need.", {},
+let guideShown = false;
+tool("list_profiles", "START HERE for anything in the user's browser (screenshot, reading a page, clicking). Lists the running browser profiles. Then call request_access with the profiles you need, then list_tabs, then the tool you want (e.g. screenshot).", {},
   async () => {
     if (!profiles.size) throw new Error(NOT_CONNECTED);
-    return text([...profiles.values()].map((p) => ({ profile: p.label, id: p.id, yourState: p.status ? p.status.state : "not requested" })));
+    const res = text([...profiles.values()].map((p) => ({ profile: p.label, id: p.id, yourState: p.status ? p.status.state : "not requested" })));
+    if (!guideShown) { guideShown = true; res.content.push({ type: "text", text: `[FluffyWolf guide]\n${GUIDE}` }); }
+    return res;
   }, false);
 
 tool("request_access", "Identify yourself and ask the user for access in one or more browser profiles (names from list_profiles). Give a short name of your own and what you want to do; the user picks this session in the FluffyWolf MCP popup of the window you should use, in each profile you named. Waits up to a minute for an answer. Pass `resume` (ids you received earlier) after a reconnect to get your saved tab lists back.",
@@ -296,7 +325,10 @@ tool("request_access", "Identify yourself and ask the user for access in one or 
         return `${p.label}: access granted to window(s) ${wins}.\n  ${s.rights}`;
       }
       return `${p.label}: not granted yet. The user has to click the FluffyWolf MCP button in the toolbar of the window you should work in, press the plank and pick "${s.name}" (${s.label}).`;
-    }).join("\n") + (chosen.some((p) => p.status.state !== "active") ? "\nCall request_access again to keep waiting." : ""));
+    }).join("\n") + (chosen.some((p) => p.status.state === "active")
+      ? "\nNext: call list_tabs to see the tabs you may use, then the tool you need (for a picture of a page: screenshot)."
+        + (chosen.some((p) => p.status.state !== "active") ? " Profiles that are 'not granted yet' can be ignored; call request_access again only if you need them." : "")
+      : "\nThe user has not picked you yet. Call request_access again to keep waiting."));
   }, false);
 
 tool("status", "Your connection and access in every running profile: state (unbound, active, paused), shared windows with time left, and your rights.", {},

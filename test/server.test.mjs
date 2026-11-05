@@ -27,6 +27,7 @@ async function startAgent() {
   return client;
 }
 const text = (r) => r.content.map((c) => c.text ?? `<${c.type}>`).join("\n");
+const firstBlock = (r) => r.content[0].text; // list_profiles puts the guide in a second block on its first call
 const call = (c, name, args = {}) => c.callTool({ name, arguments: args });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -102,9 +103,12 @@ try {
   assert.equal(await new Promise((res) => { evil.on("error", () => res(true)); evil.on("open", () => res(false)); }), true);
 
   // discovery: the agent sees both running profiles and has not asked anyone yet
-  const listed = JSON.parse(text(await call(a, "list_profiles")));
+  const listed = JSON.parse(firstBlock(await call(a, "list_profiles")));
   assert.deepEqual(listed.map((p) => p.profile).sort(), ["home", "work"]);
   assert.ok(listed.every((p) => p.yourState === "not requested"));
+  const firstReply = await call(a, "list_profiles");
+  assert.equal(firstReply.content.length, 1, "the guide comes once, with the first reply");
+  assert.match(text(await call(b, "list_profiles")), /\[FluffyWolf guide\][\s\S]*request_access[\s\S]*list_tabs[\s\S]*screenshot/);
 
   // with several profiles running the agent has to choose; an unknown profile is an error
   const noChoice = await call(a, "request_access", { name: "Alpha" });
@@ -134,7 +138,7 @@ try {
   assert.match(text(await call(a, "snapshot", { tabId: 1 })), /work tree/);
 
   // second agent: its own state, nothing leaks from the first
-  assert.deepEqual(JSON.parse(text(await call(b, "list_profiles"))).map((p) => p.yourState), ["not requested", "not requested"]);
+  assert.deepEqual(JSON.parse(firstBlock(await call(b, "list_profiles"))).map((p) => p.yourState), ["not requested", "not requested"]);
 
   // two profiles at once: granted one by one, reported per profile
   const both = text(await call(a, "request_access", { name: "Alpha", profiles: ["work", "home"] }));
@@ -172,7 +176,7 @@ try {
 
   // the profile comes back (same id): the agent can reach it again
   await until(() => work.conns.size === 2);
-  assert.deepEqual(JSON.parse(text(await call(a, "list_profiles"))).map((p) => p.profile).sort(), ["home", "work"]);
+  assert.deepEqual(JSON.parse(firstBlock(await call(a, "list_profiles"))).map((p) => p.profile).sort(), ["home", "work"]);
 
   // the user removes the agent from the profile: the profile is no longer routable and the next call says why
   home.push(home.conns.get([...home.conns.keys()].find((id) => home.log.some((l) => l[0] === id && l[1] === "snapshot"))), { ...home.status("unbound", "x"), kicked: "The user ended your access to window 1 and removed you from FluffyWolf MCP." });
@@ -180,6 +184,21 @@ try {
   const gone = await call(a, "snapshot", { tabId: 1 });
   assert.equal(gone.isError, true);
   assert.match(text(gone), /home: The user ended your access to window 1 and removed you/);
+
+  // a server that has just started waits a moment for the browser instead of saying that none is connected
+  const late = new Client({ name: "late", version: "0" });
+  await late.connect(new StdioClientTransport({
+    command: "node", args: [join(root, "server", "index.mjs")],
+    env: { ...process.env, FLUFFYWOLF_MCP_PORT: "18800" }, stderr: "ignore",
+  }));
+  const firstCall = call(late, "list_profiles");
+  await sleep(1200);
+  const lateWs = new WebSocket("ws://127.0.0.1:18800/", { origin: "moz-extension://late" });
+  lateWs.on("error", () => {});
+  lateWs.on("open", () => lateWs.send(JSON.stringify({ type: "hello", token, version: "t", profileId: randomBytes(16).toString("hex"), profile: "late" })));
+  assert.deepEqual(JSON.parse(firstBlock(await firstCall)).map((p) => p.profile), ["late"]);
+  lateWs.close();
+  await late.close();
 
   // a reconnecting profile replaces its own old socket instead of piling up
   const seen = [...home.sockets.values()].length;
