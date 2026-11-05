@@ -12,3 +12,6 @@ server/smoke-test.mjs
 
 *.log
 .DS_Store
+
+# local agent notes
+CLAUDE.md
