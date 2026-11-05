@@ -1,5 +1,7 @@
 <div align="center">
 
+**🇬🇧 English** &nbsp;·&nbsp; **[🇷🇺 Русский](README.ru.md)**
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
   <img src="docs/images/hero-light.png" alt="FluffyWolf MCP: let AI agents use your real browser, only the windows and tabs you allow" width="100%">
@@ -7,13 +9,15 @@
 
 <br>
 
+[![Читать на русском](https://img.shields.io/badge/README-%D0%BD%D0%B0%20%D1%80%D1%83%D1%81%D1%81%D0%BA%D0%BE%D0%BC-d97757?style=for-the-badge)](README.ru.md)
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-d97757?style=flat-square)](LICENSE)
 [![Firefox-based browsers](https://img.shields.io/badge/browsers-Firefox--based-d97757?style=flat-square)](#supported-browsers)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-server-d97757?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js 18+](https://img.shields.io/badge/node-%E2%89%A518-d97757?style=flat-square)](#quick-start)
 [![100% local](https://img.shields.io/badge/runs-100%25%20local-3f7d58?style=flat-square)](#security-model)
 
-**[Why](#why-fluffywolf-mcp)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Using it](#using-it)** · **[Tools](#tools)** · **[Security](#security-model)** · **[Troubleshooting](#troubleshooting)** · **[Русский](README.ru.md)**
+**[Why](#why-fluffywolf-mcp)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Using it](#using-it)** · **[Tools](#tools)** · **[Security](#security-model)** · **[Troubleshooting](#troubleshooting)** · **[🇷🇺 Русский](README.ru.md)**
 
 </div>
 
