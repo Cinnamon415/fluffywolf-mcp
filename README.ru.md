@@ -3,8 +3,8 @@
 **[🇬🇧 English](README.md)** &nbsp;·&nbsp; **🇷🇺 Русский**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
-  <img src="docs/images/hero-light.png" alt="FluffyWolf MCP: ИИ-агенты работают в вашем настоящем браузере, но только в тех окнах и вкладках, которые вы разрешили" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-ru-dark.png">
+  <img src="docs/images/hero-ru-light.png" alt="FluffyWolf MCP: ИИ-агенты работают в вашем настоящем браузере, но только в тех окнах и вкладках, которые вы разрешили" width="100%">
 </picture>
 
 <br>
@@ -98,8 +98,8 @@ FluffyWolf MCP состоит из [MCP](https://modelcontextprotocol.io)-сер
 Окно расширения служит панелью управления. Оно следует теме браузера, светлой или тёмной.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/states-dark.png">
-  <img src="docs/images/states-light.png" alt="Четыре состояния окна расширения: агенты просят доступ, доступ выдан с правами, полный доступ, пауза" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/states-ru-dark.png">
+  <img src="docs/images/states-ru-light.png" alt="Четыре состояния окна расширения: агенты просят доступ, доступ выдан с правами, полный доступ, пауза" width="100%">
 </picture>
 
 Подписи на картинке английские, а сам интерфейс окна расширения русский, как в тексте ниже.
@@ -203,8 +203,8 @@ claude mcp add --scope user fluffywolf -- node /absolute/path/to/fluffywolf-mcp/
 ## Как это работает
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture-dark.png">
-  <img src="docs/images/architecture-light.png" alt="Архитектура: у каждого агента свой процесс MCP-сервера со своим локальным портом; расширение в каждом профиле подключается ко всем и решает, что агенту можно" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture-ru-dark.png">
+  <img src="docs/images/architecture-ru-light.png" alt="Архитектура: у каждого агента свой процесс MCP-сервера со своим локальным портом; расширение в каждом профиле подключается ко всем и решает, что агенту можно" width="100%">
 </picture>
 
 - **Один процесс MCP-сервера на агента.** Его запускает ваш MCP-клиент через stdio. Он получает случайный идентификатор и слушает свой локальный порт из диапазона `8767`–`8776`.
@@ -215,8 +215,8 @@ claude mcp add --scope user fluffywolf -- node /absolute/path/to/fluffywolf-mcp/
 ### Порядок выдачи доступа
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/flow-dark.png">
-  <img src="docs/images/flow-light.png" alt="Четыре шага: агент представляется, вы выбираете сессию, вы задаёте права, вы разрешаете вкладки" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/flow-ru-dark.png">
+  <img src="docs/images/flow-ru-light.png" alt="Четыре шага: агент представляется, вы выбираете сессию, вы задаёте права, вы разрешаете вкладки" width="100%">
 </picture>
 
 ## Использование
@@ -260,8 +260,8 @@ claude mcp add --scope user fluffywolf -- node /absolute/path/to/fluffywolf-mcp/
 Пока к окну привязан агент с ограничениями, расширение добавляет в адресную строку вкладок этого окна кнопку. Нажмите её, чтобы поделиться текущей вкладкой, и нажмите ещё раз, чтобы забрать её обратно. Если у агента полный доступ или его нет, кнопка пропадает: решать больше нечего.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/address-bar-dark.png">
-  <img src="docs/images/address-bar-light.png" alt="Кнопка в адресной строке в состояниях «вкладка разрешена» и «не разрешена»" width="70%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/address-bar-ru-dark.png">
+  <img src="docs/images/address-bar-ru-light.png" alt="Кнопка в адресной строке в состояниях «вкладка разрешена» и «не разрешена»" width="70%">
 </picture>
 
 Список разрешённых вкладок хранится отдельно для каждого агента, дополнительно записывается во вкладку через API `sessions` и живёт **неделю** после отключения агента. Если агент передаст свой идентификатор в `request_access` (параметр `resume`), он получит назад свой список и права. Если окно переключить на другого агента, у того будет свой список.
