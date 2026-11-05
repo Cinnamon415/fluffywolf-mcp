@@ -206,7 +206,7 @@ const GUIDE = [
 ].join("\n");
 const INSTRUCTIONS = GUIDE;
 
-const server = new McpServer({ name: "fluffywolf", version: "1.3.1" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "fluffywolf", version: "1.3.2" }, { instructions: INSTRUCTIONS });
 
 const tabId = z.number().int().optional().describe("Tab id from list_tabs. Defaults to the tab you used last.");
 const ref = z.string().optional().describe("Element ref from snapshot, e.g. e12");

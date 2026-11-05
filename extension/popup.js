@@ -76,7 +76,14 @@ function renderPicker() {
       pickerOpen = false;
       apply(await send({ type: "bind", connId: c.connId }));
     });
-    return b;
+    const x = el("button", "cand-x");
+    x.type = "button";
+    x.setAttribute("aria-label", "Отклонить");
+    x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    x.addEventListener("click", async () => apply(await send({ type: "decline", connId: c.connId })));
+    const row = el("div", "cand-row");
+    row.append(b, x);
+    return row;
   });
 }
 

@@ -371,6 +371,14 @@ function bind(windowId, connId, minutes) {
   refreshChrome();
 }
 
+// The user turns a pending request down: the agent leaves the list at once and its next call says why.
+function decline(connId) {
+  const agent = agents.get(connId);
+  if (!agent || !agent.name || boundWindows(agent).length) return;
+  evict(agent, "The user declined your request for access to this browser profile.");
+  refreshChrome();
+}
+
 function unbind(windowId) {
   const b = bindings.get(windowId);
   if (!b) return;
@@ -548,6 +556,7 @@ browser.runtime.onMessage.addListener(async (msg, sender) => {
       case "view": break;
       case "bind": bind(w, msg.connId, msg.minutes); break;
       case "unbind": unbind(w); break;
+      case "decline": decline(msg.connId); break;
       case "grant": grant(w, msg.minutes); break;
       case "revoke": revoke(w); break;
       case "extend": extend(w); break;

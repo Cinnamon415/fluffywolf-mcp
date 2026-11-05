@@ -363,6 +363,14 @@ assert.match(ok(await cmd(wa2, "status")).kicked, /removed you/);
 ok(await cmd(wa2, "request_access", { name: "Alpha again", cwd: "/home/u/projects/alpha", pid: 13 }));
 assert.ok((await popup({ type: "view" })).candidates.some((c) => c.name === "Alpha again"));
 
+// decline turns a pending request down: gone from the list, the next call says why, it may ask again
+const alpha = (await popup({ type: "view" })).candidates.find((c) => c.name === "Alpha again");
+await popup({ type: "decline", connId: alpha.connId });
+assert.ok((await popup({ type: "view" })).candidates.every((c) => c.connId !== alpha.connId));
+fails(await cmd(wa2, "list_tabs"), /declined your request/);
+ok(await cmd(wa2, "request_access", { name: "Alpha again", cwd: "/home/u/projects/alpha", pid: 13 }));
+assert.ok((await popup({ type: "view" })).candidates.some((c) => c.name === "Alpha again"));
+
 // the saved list is dropped a week after the agent left
 wa2.close();
 now += 8 * 24 * 3600 * 1000;

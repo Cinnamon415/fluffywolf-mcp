@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2
+
+- The popup has a "Decline" button next to every pending agent. The agent disappears from the list and its next call says that the user declined; it may ask again.
+
 ## 1.3.1
 
 - Fix: a server that started after the browser could stay unconnected for up to a minute, and agents then reported "no browser profile is connected". Firefox delays WebSocket reconnects after failed attempts, and the extension tried every port every four seconds. It now probes each port with a plain HTTP request first and opens a WebSocket only where a server answers.

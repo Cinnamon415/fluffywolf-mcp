@@ -8,6 +8,7 @@
   --accent-hover: #c6613f;
   --accent-fg: #ffffff;
   --ok: #3f7d58;
+  --danger: #b5473a; --danger-soft: rgba(181, 71, 58, 0.13);
   --field: #ffffff;
   --serif: "Tiempos Headline", "Iowan Old Style", "Palatino Linotype", Georgia, ui-serif, serif;
   --sans: system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
@@ -16,11 +17,13 @@
 :root[data-theme="dark"] {
   --bg: #262624; --card: #30302e; --fg: #faf9f5; --muted: #a3a198;
   --line: #43423e; --field: #1f1e1d; --ok: #7bc496;
+  --danger: #e88a79; --danger-soft: rgba(232, 138, 121, 0.16);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #262624; --card: #30302e; --fg: #faf9f5; --muted: #a3a198;
     --line: #43423e; --field: #1f1e1d; --ok: #7bc496;
+    --danger: #e88a79; --danger-soft: rgba(232, 138, 121, 0.16);
   }
 }
 
@@ -118,6 +121,15 @@ input[type="number"], input[type="text"] {
 .picker { margin: -4px 0 12px; display: flex; flex-direction: column; gap: 6px; }
 .picker[hidden], #bound[hidden], #tabs[hidden] { display: none; }
 .picker-empty { margin: 0; padding: 4px 2px; color: var(--muted); font-size: 12px; }
+.cand-row { position: relative; }
+.cand-row .cand { width: 100%; padding-right: 46px; }
+.cand-x {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 30px; height: 30px; padding: 0;
+  display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer;
+}
+.cand-x svg { width: 14px; height: 14px; }
+.cand-x:hover { background: var(--danger-soft); }
+.cand-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cand {
   display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; text-align: left; cursor: pointer;
   border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--fg); font: inherit;
