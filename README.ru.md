@@ -112,7 +112,7 @@ FluffyWolf MCP состоит из [MCP](https://modelcontextprotocol.io)-сер
 |---|---|
 | **LibreWolf** 156 (Flatpak, Linux) | Разрабатывалось и проверялось здесь |
 | Firefox ESR, Developer Edition, Nightly | Должно работать, не проверялось. Они поддерживают переключатель неподписанных дополнений, описанный ниже |
-| Firefox release и beta | Нужна подписанная сборка или временная установка, см. [Установите его в браузер](#3-установите-его-в-браузер) |
+| Firefox release и beta | Не принимают неподписанные дополнения, поэтому работает только временная установка (до перезапуска браузера), см. [Установите его в браузер](#3-установите-его-в-браузер) |
 | Zen, Floorp, Waterfox, Mullvad Browser и другие форки | Должно работать, не проверялось |
 | Windows, macOS | Не проверялось. Для самостоятельной сборки нужна команда `zip`, поэтому в Windows берите файл из релиза или используйте WSL / Git Bash |
 
@@ -162,13 +162,6 @@ npm --prefix server install
 <summary><b>Вариант B. Временная установка</b> (любой браузер на базе Firefox, до перезапуска браузера)</summary>
 
 Откройте `about:debugging#/runtime/this-firefox`, нажмите **Загрузить временное дополнение…** и выберите `.xpi` (или `extension/manifest.json` после `npm run build`).
-
-</details>
-
-<details>
-<summary><b>Вариант C. Подписанная сборка</b> (Firefox release и beta, которые не принимают неподписанные дополнения)</summary>
-
-Mozilla бесплатно подписывает дополнения для самостоятельного распространения: заведите аккаунт на [addons.mozilla.org](https://addons.mozilla.org/developers/), получите API-ключи и выполните `npx web-ext sign --channel=unlisted --source-dir extension --api-key=… --api-secret=…`. Это путь, описанный у Mozilla, для этого проекта он ещё не проверялся. Возможно, сначала стоит заменить `browser_specific_settings.gecko.id` в `extension/manifest.json` на идентификатор, который принадлежит вам. Если сборка была с вашим токеном, подписанный файл держите при себе.
 
 </details>
 
@@ -358,7 +351,7 @@ npm run setup      # создаёт случайный .token и собирае�
 <details>
 <summary><b>Firefox пишет, что дополнение «не удалось установить, так как оно повреждено», или что оно не проверено</b></summary>
 
-Ваш браузер требует подписи дополнений, а сборка не подписана. Release и beta Firefox требуют всегда. Используйте браузер, который понимает `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), загрузите расширение временно через `about:debugging` или подпишите его, как описано в [Установите его в браузер](#3-установите-его-в-браузер).
+Ваш браузер требует подписи дополнений, а сборка не подписана. Release и beta Firefox требуют всегда. Используйте браузер, который понимает `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), или загрузите расширение временно через `about:debugging` (см. [Установите его в браузер](#3-установите-его-в-браузер)).
 
 </details>
 

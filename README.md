@@ -115,7 +115,7 @@ The extension is a Manifest V2 WebExtension that uses the standard `pageAction`,
 |---|---|
 | **LibreWolf** 156 (Flatpak, Linux) | Developed and tested here |
 | Firefox ESR, Developer Edition, Nightly | Should work, not tested. They honour the unsigned-add-on switch described below |
-| Firefox release and beta | Needs a signed build or a temporary install, see [Install it in the browser](#3-install-it-in-the-browser) |
+| Firefox release and beta | Refuse unsigned add-ons, so only the temporary install works (until the browser restarts), see [Install it in the browser](#3-install-it-in-the-browser) |
 | Zen, Floorp, Waterfox, Mullvad Browser and other forks | Expected to work, not tested |
 | Windows, macOS | Not tested. Building the extension yourself needs the `zip` command, so on Windows use the release file or WSL / Git Bash |
 
@@ -165,13 +165,6 @@ If you prefer a click-through, run `npm run install-page`, open <http://127.0.0.
 <summary><b>Option B. Temporary install</b> (any Firefox-based browser, lasts until the browser restarts)</summary>
 
 Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…** and select the `.xpi` (or `extension/manifest.json` after `npm run build`).
-
-</details>
-
-<details>
-<summary><b>Option C. Signed build</b> (Firefox release and beta, which refuse unsigned add-ons)</summary>
-
-Mozilla signs add-ons for self-distribution for free: create an account on [addons.mozilla.org](https://addons.mozilla.org/developers/), generate API credentials and run `npx web-ext sign --channel=unlisted --source-dir extension --api-key=… --api-secret=…`. This is Mozilla's documented route and has not been run for this project yet. You will probably want to change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an id you own first. If it was built with your own token, keep the signed file private.
 
 </details>
 
@@ -361,7 +354,7 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 <details>
 <summary><b>Firefox says the add-on "could not be installed because it appears to be corrupt" or is not verified</b></summary>
 
-Your browser enforces add-on signatures, and the build is unsigned. Release and beta Firefox always do. Use a browser that honours `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), load the extension temporarily from `about:debugging`, or sign it as described in [Install it in the browser](#3-install-it-in-the-browser).
+Your browser enforces add-on signatures, and the build is unsigned. Release and beta Firefox always do. Use a browser that honours `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), or load the extension temporarily from `about:debugging` (see [Install it in the browser](#3-install-it-in-the-browser)).
 
 </details>
 
