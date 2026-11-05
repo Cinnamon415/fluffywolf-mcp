@@ -11,4 +11,5 @@ First public version.
 - Several agents at once, each with its own MCP server process and port (8767–8776).
 - Several browser profiles at once, fully isolated. Agents list the profiles, then ask the ones they need.
 - Removing an agent drops it from the popup at once; its next call explains what happened.
+- Releases ship an `.xpi` built with a public default token that the server also uses when it finds no other. Build it yourself, or set `FLUFFYWOLF_MCP_TOKEN`, to use your own token.
 - Popup control panel with light and dark themes. The popup text is Russian.

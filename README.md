@@ -111,35 +111,47 @@ The extension is a Manifest V2 WebExtension that uses the standard `pageAction`,
 |---|---|
 | **LibreWolf** 156 (Flatpak, Linux) | Developed and tested here |
 | Firefox ESR, Developer Edition, Nightly | Should work, not tested. They honour the unsigned-add-on switch described below |
-| Firefox release and beta | Needs a signed build or a temporary install, see [Installing the extension](#2-install-the-extension) |
+| Firefox release and beta | Needs a signed build or a temporary install, see [Install it in the browser](#3-install-it-in-the-browser) |
 | Zen, Floorp, Waterfox, Mullvad Browser and other forks | Expected to work, not tested |
-| Windows, macOS | Not tested. The build step needs the `zip` command, so on Windows use WSL or Git Bash |
+| Windows, macOS | Not tested. Building the extension yourself needs the `zip` command, so on Windows use the release file or WSL / Git Bash |
 
 If you try it elsewhere, please open an issue with the result so this table can grow.
 
 ## Quick start
 
-You need **Node.js 18 or newer**, **npm** and the **`zip`** command-line tool.
+You need **Node.js 18 or newer** and **npm**. Building the extension yourself also needs the **`zip`** command-line tool.
 
-### 1. Get the code and build
+### 1. Get the code
 
 ```bash
 git clone https://github.com/Cinnamon415/fluffywolf-mcp.git
 cd fluffywolf-mcp
-npm run setup
+npm --prefix server install
 ```
 
-`npm run setup` installs the server's dependencies and runs the build. The build creates your own secret in `.token`, writes it into `extension/config.js` and packs `dist/fluffywolf-mcp.xpi`. Both files are listed in `.gitignore` on purpose: see [Security model](#security-model).
+### 2. Get the extension file
 
-### 2. Install the extension
+Pick one. Both give you a file you install in step 3.
 
-Do this **in every browser profile** you want agents to use.
+| | Download the release | Build it yourself |
+|---|---|---|
+| How | Take `fluffywolf-mcp.xpi` from the [latest release](https://github.com/Cinnamon415/fluffywolf-mcp/releases/latest) | `npm run setup` creates `dist/fluffywolf-mcp.xpi` |
+| Token | The **public default token**, the same for everyone, already known to the server | Your **own random token**, created in `.token` and picked up by the server automatically |
+| Needs | Nothing more | The `zip` command |
+| Good for | A quick try on a machine only you use | Everyday use, shared machines, anything you care about |
+
+> [!WARNING]
+> The released `.xpi` carries a token that is published in this repository. Anything on your computer can read it and could pose as your browser to the MCP server. Read [About the token](#about-the-token) and switch to your own build when you move beyond a quick try.
+
+### 3. Install it in the browser
+
+Do this **in every browser profile** you want agents to use, with the file from step 2.
 
 <details open>
 <summary><b>Option A. Permanent install of the unsigned build</b> (LibreWolf, Firefox ESR, Developer Edition, Nightly)</summary>
 
 1. Open `about:config` and set `xpinstall.signatures.required` to `false`. The setting is per profile.
-2. Open `about:addons`, click the gear icon, choose **Install Add-on From File…** and select `dist/fluffywolf-mcp.xpi`.
+2. Open `about:addons`, click the gear icon, choose **Install Add-on From File…** and select the `.xpi` (the downloaded file or `dist/fluffywolf-mcp.xpi`).
 
 If you prefer a click-through, run `npm run install-page`, open <http://127.0.0.1:8799/> in the browser and press the install button. Stop the helper with Ctrl+C afterwards.
 
@@ -148,22 +160,22 @@ If you prefer a click-through, run `npm run install-page`, open <http://127.0.0.
 <details>
 <summary><b>Option B. Temporary install</b> (any Firefox-based browser, lasts until the browser restarts)</summary>
 
-Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…** and select `extension/manifest.json`.
+Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…** and select the `.xpi` (or `extension/manifest.json` after `npm run build`).
 
 </details>
 
 <details>
 <summary><b>Option C. Signed build</b> (Firefox release and beta, which refuse unsigned add-ons)</summary>
 
-Mozilla signs add-ons for self-distribution for free: create an account on [addons.mozilla.org](https://addons.mozilla.org/developers/), generate API credentials and run `npx web-ext sign --channel=unlisted --source-dir extension --api-key=… --api-secret=…`. This is Mozilla's documented route and has not been run for this project yet. You will probably want to change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an id you own first. Keep the signed file private: it contains your secret.
+Mozilla signs add-ons for self-distribution for free: create an account on [addons.mozilla.org](https://addons.mozilla.org/developers/), generate API credentials and run `npx web-ext sign --channel=unlisted --source-dir extension --api-key=… --api-secret=…`. This is Mozilla's documented route and has not been run for this project yet. You will probably want to change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an id you own first. If it was built with your own token, keep the signed file private.
 
 </details>
 
 After installing, open the extension's popup and type a recognisable name into the field at the bottom (for example `work` or `personal`). That name is what agents will see.
 
-### 3. Register the MCP server in your client
+### 4. Register the MCP server in your client
 
-Use the absolute path to `server/index.mjs`. The server reads `.token`, so run the build first.
+Use the absolute path to `server/index.mjs`. The server finds its token by itself, see [About the token](#about-the-token).
 
 **Claude Code**
 
@@ -186,7 +198,7 @@ claude mcp add --scope user fluffywolf -- node /absolute/path/to/fluffywolf-mcp/
 
 Restart the client or run `/mcp` in Claude Code to reconnect.
 
-### 4. Try it
+### 5. Try it
 
 Ask your agent something like:
 
@@ -302,6 +314,7 @@ An agent should first call `list_profiles`, then `request_access` naming the pro
 |---|---|
 | Default access time | Popup → "По умолчанию, минут" (default time in minutes). Saved in the browser. |
 | Profile name | Popup → "Имя этого профиля" (profile name). Saved in the browser. |
+| Token | `FLUFFYWOLF_MCP_TOKEN` (at least 32 characters) when building and in the server's environment, or the `.token` file. See [About the token](#about-the-token). |
 | Base port | Set `FLUFFYWOLF_MCP_PORT` (default `8767`) **both** when you run `node build.mjs` and in the MCP server's environment. They must match. |
 | Number of agents at once | Ten, on ports `base` to `base+9`. |
 
@@ -311,9 +324,30 @@ An agent should first call `list_profiles`, then `request_access` naming the pro
 
 **What keeps strangers out of the bridge.** The server listens on `127.0.0.1` only and accepts connections only from a `moz-extension://` origin that presents the shared secret. A web page cannot open that connection.
 
-**The shared secret is generated at build time and baked into the extension.** Your build creates a random secret in `.token` and writes it into the `.xpi`. Because the same value sits in your extension and your server, the build is yours: do not publish or share your `.xpi`, and do not install someone else's prebuilt one, since its secret is known to everyone who has it. There is no per-install pairing yet. For the intended use, one person on one machine, this is a known and accepted limitation.
+### About the token
 
-**Limitations to be aware of**
+**What it is.** A long random string that both sides must know. The extension sends it when it connects, and the server accepts only connections that present it. It stops *other things on your computer*, such as other users, sandboxed apps or other extensions, from posing as your browser to the MCP server. Web pages cannot connect at all: the server also checks the `moz-extension://` origin.
+
+**Which token you are using.** The `.xpi` attached to a release is built with a **public default token**. It sits in [`default.token`](default.token) in this repository, and the server falls back to it when it finds nothing else. That makes a quick try work with zero setup. It also means everyone knows it. The server prints a warning in its log while it uses the default.
+
+**Why you should change it.** With a known token, any process that can reach `127.0.0.1` on your machine can connect to your MCP server as if it were your browser. It could hand your agent fake page contents and read what the agent types, opens and asks for. It cannot widen the agent's rights or reach your real browser: those stay in the extension, and you still approve every agent in the popup. On a machine only you use, running nothing you do not trust, the risk is small. On a shared computer, or while you run unfamiliar software, use your own token.
+
+**How to change it.** Build the extension yourself, so the token inside it is yours, and give the same token to the server:
+
+```bash
+npm run setup                      # creates a random .token, builds dist/fluffywolf-mcp.xpi with it
+```
+
+Install that `.xpi` in every profile in place of the released one. The server reads `.token` by itself, so there is nothing else to configure. To choose the token yourself:
+
+```bash
+FLUFFYWOLF_MCP_TOKEN=<at least 32 characters> node build.mjs
+claude mcp add --scope user --env FLUFFYWOLF_MCP_TOKEN=<the same value> fluffywolf -- node /absolute/path/to/fluffywolf-mcp/server/index.mjs
+```
+
+(For clients with a JSON config, put the same variable under `"env"` next to `"command"` and `"args"`.) The server looks for the token in this order: `FLUFFYWOLF_MCP_TOKEN`, then `.token`, then `default.token`. Keep your own `.xpi` and token private: do not publish or share them. There is no per-install pairing yet.
+
+### Limitations
 
 - `evaluate` runs arbitrary JavaScript in a page the agent may use. It stays inside the three rights, but a script can do anything the page can, including `fetch` to other sites.
 - "Same site" is an approximation of the registrable domain (the last two labels, plus a list of multi-tenant hosts such as `github.io`) and does not use the Public Suffix List.
@@ -330,7 +364,7 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 <details>
 <summary><b>Firefox says the add-on "could not be installed because it appears to be corrupt" or is not verified</b></summary>
 
-Your browser enforces add-on signatures, and the build is unsigned. Release and beta Firefox always do. Use a browser that honours `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), load the extension temporarily from `about:debugging`, or sign it as described in [Installing the extension](#2-install-the-extension).
+Your browser enforces add-on signatures, and the build is unsigned. Release and beta Firefox always do. Use a browser that honours `xpinstall.signatures.required=false` (LibreWolf, Firefox ESR, Developer Edition, Nightly), load the extension temporarily from `about:debugging`, or sign it as described in [Install it in the browser](#3-install-it-in-the-browser).
 
 </details>
 
@@ -340,7 +374,7 @@ Your browser enforces add-on signatures, and the build is unsigned. Release and 
 Check, in this order:
 
 1. The browser is running and the extension is enabled in `about:addons`. Extensions are off in private windows unless you allow them.
-2. The extension and the server come from the **same build**. If you deleted `.token` or ran the build again, the secret changed: reinstall the new `.xpi` in every profile.
+2. The extension and the server use the **same token**. The released `.xpi` matches the server's `default.token`. If a `.token` file exists next to the server (from your own build) or `FLUFFYWOLF_MCP_TOKEN` is set, the server uses that instead, so install the `.xpi` you built, or remove the file. If you deleted `.token` and built again, the token changed: reinstall the new `.xpi` in every profile.
 3. `FLUFFYWOLF_MCP_PORT` is identical when building and when starting the server.
 4. Give it a few seconds. The extension scans for servers every four seconds.
 
@@ -384,7 +418,7 @@ Clicks are synthetic events, and a few pages ignore them. Ask the agent to use `
 <details>
 <summary><b>I updated the code and now things behave oddly</b></summary>
 
-The server and extension are meant to be updated together. Pull, run `npm run build`, reinstall the `.xpi` in **every** profile and reconnect your MCP clients (`/mcp` in Claude Code). Your `.token` is kept, so the secret does not change.
+The server and extension are meant to be updated together. Pull, then reinstall the `.xpi` in **every** profile (a new release file, or your own build after `npm run build`) and reconnect your MCP clients (`/mcp` in Claude Code). Your `.token` is kept, so your own token does not change.
 
 </details>
 

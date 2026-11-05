@@ -11,7 +11,7 @@ FluffyWolf MCP limits what an AI agent can do **through the browser**: which win
 A few points worth repeating:
 
 - The bridge listens on `127.0.0.1` only and accepts only extension origins that present the shared secret.
-- The shared secret is generated at build time into your own `.token` and baked into your own `.xpi`. Treat the `.xpi` as private, and do not install a prebuilt one from someone else: its secret is known to everyone who has it. There is no per-install pairing yet.
+- Releases are built with a **public default token** (`default.token`), which the server also falls back to. It is meant for a quick try: anything on your machine can read it. For real use, build the extension yourself so the token inside it is yours. See [About the token](README.md#about-the-token). The server prints a warning while it uses the default.
 - A process that already runs as your user can read your browser profile and `.token`. This tool does not defend against that.
 
 ## Supported versions

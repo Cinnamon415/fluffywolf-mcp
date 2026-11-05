@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build the extension with the public default token
+        run: FLUFFYWOLF_MCP_TOKEN="$(cat default.token)" node build.mjs
+      - name: Checksum
+        run: cd dist && sha256sum fluffywolf-mcp.xpi > fluffywolf-mcp.xpi.sha256
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          dist/fluffywolf-mcp.xpi dist/fluffywolf-mcp.xpi.sha256
+          --title "FluffyWolf MCP ${GITHUB_REF_NAME#v}"
+          --notes-file .github/release-notes.md

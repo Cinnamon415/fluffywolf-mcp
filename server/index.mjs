@@ -16,9 +16,24 @@ import { z } from "zod";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE_PORT = Number(process.env.FLUFFYWOLF_MCP_PORT || 8767);
 const PORT_SPAN = 10; // keep in sync with `span` in build.mjs
-const TOKEN = readFileSync(join(root, ".token"), "utf8").trim();
 const AGENT_ID = randomBytes(16).toString("hex");
 const log = (...a) => console.error("[fluffywolf-mcp]", ...a);
+
+// The shared secret the extension presents. First found wins: FLUFFYWOLF_MCP_TOKEN, the `.token` file that
+// build.mjs writes for your own build, then the public `default.token` that the released extension is built with.
+function loadToken() {
+  const fromEnv = (process.env.FLUFFYWOLF_MCP_TOKEN || "").trim();
+  const candidates = [["FLUFFYWOLF_MCP_TOKEN", () => fromEnv], [".token", () => readFileSync(join(root, ".token"), "utf8")], ["default.token", () => readFileSync(join(root, "default.token"), "utf8")]];
+  for (const [source, read] of candidates) {
+    let t = "";
+    try { t = read().trim(); } catch {}
+    if (!t) continue;
+    if (t.length < 32) throw new Error(`The token from ${source} is too short (32 characters at least).`);
+    return { token: t, source };
+  }
+  throw new Error("No token found: expected FLUFFYWOLF_MCP_TOKEN, .token or default.token next to the server.");
+}
+const { token: TOKEN, source: TOKEN_SOURCE } = loadToken();
 
 // ---------------- bridge ----------------
 //
@@ -64,7 +79,11 @@ function startBridge(p = BASE_PORT) {
     log(`all bridge ports ${BASE_PORT}-${BASE_PORT + PORT_SPAN - 1} are busy; retrying in 5s`);
     setTimeout(() => startBridge(BASE_PORT), 5000);
   });
-  http.listen(p, "127.0.0.1", () => { port = p; log(`agent ${AGENT_ID.slice(-4)}: bridge listening on 127.0.0.1:${p}`); });
+  http.listen(p, "127.0.0.1", () => {
+    port = p;
+    log(`agent ${AGENT_ID.slice(-4)}: bridge listening on 127.0.0.1:${p}`);
+    if (TOKEN_SOURCE === "default.token") log("using the PUBLIC default token: build your own extension and set your own token (see README, Security model)");
+  });
 
   wss.on("connection", (ws) => {
     let profile = null;

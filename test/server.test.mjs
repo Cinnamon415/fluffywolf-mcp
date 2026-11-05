@@ -1,6 +1,5 @@
 // Starts two real MCP server processes (two agents) and plays the extension's side for two browser profiles over
 // real WebSockets. Checks profile discovery, isolation, routing and what happens when one profile goes away.
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
@@ -14,13 +13,13 @@ const { StdioClientTransport } = await import(require.resolve("@modelcontextprot
 const WebSocket = require("ws");
 
 const BASE = 18767;
-const token = readFileSync(join(root, ".token"), "utf8").trim();
+const token = randomBytes(32).toString("hex"); // handed to the servers through the environment
 
 async function startAgent() {
   const client = new Client({ name: "t", version: "0" });
   await client.connect(new StdioClientTransport({
     command: "node", args: [join(root, "server", "index.mjs")],
-    env: { ...process.env, FLUFFYWOLF_MCP_PORT: String(BASE) }, stderr: "ignore",
+    env: { ...process.env, FLUFFYWOLF_MCP_PORT: String(BASE), FLUFFYWOLF_MCP_TOKEN: token }, stderr: "ignore",
   }));
   return client;
 }
